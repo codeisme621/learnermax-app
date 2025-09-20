@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  backend
+  LearnerMax API - Express.js application using aws-lambda-web-adapter
 Transform:
 - AWS::Serverless-2016-10-31
 
@@ -13,103 +13,77 @@ Parameters:
       - "prod"
     Description: Environment name (dev or prod)
 
-# Resources declares the AWS resources that you want to include in the stack
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+# Global configuration for all functions
+Globals:
+  Function:
+    Tracing: Active
+    LoggingConfig:
+      LogFormat: JSON
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+  Api:
+    TracingEnabled: true
+    Cors:
+      AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+      AllowOrigin: "'*'"
+
 Resources:
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-
-  # This is a Lambda function config associated with the source code: get-all-items.js
-  getAllItemsFunction:
+  # Single Lambda function running Express.js with aws-lambda-web-adapter
+  LearnerMaxApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/get-all-items.getAllItemsHandler
-      Runtime: nodejs22.x
+      FunctionName: !Sub "learnermax-api-${Environment}"
+      Description: LearnerMax API using Express.js and aws-lambda-web-adapter
+      CodeUri: .
+      Handler: run.sh
+      Runtime: nodejs20.x
       Architectures:
-      - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: A simple example includes a HTTP get method to get all items 
-        from a DynamoDB table.
-      Policies:
-        # Give Create/Read/Update/Delete Permissions to the SampleTable
-      - DynamoDBCrudPolicy:
-          TableName: !Ref SampleTable
+        - x86_64
+      MemorySize: 1024
+      Timeout: 30
       Environment:
         Variables:
-          # Make table name accessible as environment variable from function code during execution
+          # Enable aws-lambda-web-adapter
+          AWS_LAMBDA_EXEC_WRAPPER: /opt/bootstrap
+          # Port for Express app
+          PORT: 8080
+          # DynamoDB table reference
           SAMPLE_TABLE: !Ref SampleTable
           ENVIRONMENT: !Ref Environment
+          # Logging configuration
+          AWS_LAMBDA_LOG_LEVEL: INFO
+      # Add the Lambda Web Adapter layer
+      Layers:
+        - !Sub "arn:aws:lambda:${AWS::Region}:753240598075:layer:LambdaAdapterLayerX86:22"
+      Policies:
+        # Give full access to the DynamoDB table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SampleTable
+        # CloudWatch Logs permissions
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
       Events:
-        Api:
+        # Catch all requests and let Express handle routing
+        ApiRoot:
           Type: Api
           Properties:
             Path: /
-            Method: GET
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-
-  # This is a Lambda function config associated with the source code: get-by-id.js
-  getByIdFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/get-by-id.getByIdHandler
-      Runtime: nodejs22.x
-      Architectures:
-      - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: A simple example includes a HTTP get method to get one item 
-        by id from a DynamoDB table.
-      Policies:
-        # Give Create/Read/Update/Delete Permissions to the SampleTable
-      - DynamoDBCrudPolicy:
-          TableName: !Ref SampleTable
-      Environment:
-        Variables:
-          # Make table name accessible as environment variable from function code during execution
-          SAMPLE_TABLE: !Ref SampleTable
-          ENVIRONMENT: !Ref Environment
-      Events:
-        Api:
+            Method: ANY
+        ApiProxy:
           Type: Api
           Properties:
-            Path: /{id}
-            Method: GET
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+            Path: /{proxy+}
+            Method: ANY
 
-  # This is a Lambda function config associated with the source code: put-item.js
-  putItemFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/put-item.putItemHandler
-      Runtime: nodejs22.x
-      Architectures:
-      - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: A simple example includes a HTTP post method to add one item 
-        to a DynamoDB table.
-      Policies:
-        # Give Create/Read/Update/Delete Permissions to the SampleTable
-      - DynamoDBCrudPolicy:
-          TableName: !Ref SampleTable
-      Environment:
-        Variables:
-          # Make table name accessible as environment variable from function code during execution
-          SAMPLE_TABLE: !Ref SampleTable
-          ENVIRONMENT: !Ref Environment
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /
-            Method: POST
-  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
-
-  # DynamoDB table to store item: {id: &lt;ID&gt;, name: &lt;NAME&gt;}
+  # DynamoDB table for storing learning items
   SampleTable:
     Type: AWS::Serverless::SimpleTable
     Properties:
@@ -120,29 +94,81 @@ Resources:
         ReadCapacityUnits: 2
         WriteCapacityUnits: 2
 
+  # Application Insights for monitoring
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
-      Name:
-        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      Name: !Sub "ApplicationInsights-SAM-${AWS::StackName}"
       ResourceQuery:
         Type: CLOUDFORMATION_STACK_1_0
+
   ApplicationInsightsMonitoring:
     Type: AWS::ApplicationInsights::Application
     Properties:
-      ResourceGroupName:
-        Ref: ApplicationResourceGroup
-      AutoConfigurationEnabled: 'true'
+      ResourceGroupName: !Ref ApplicationResourceGroup
+      AutoConfigurationEnabled: true
+
+  # CloudWatch Alarms for monitoring
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "learnermax-lambda-errors-${Environment}"
+      AlarmDescription: "High error rate in LearnerMax Lambda function"
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref LearnerMaxApiFunction
+      TreatMissingData: notBreaching
+
+# Conditions for environment-specific resources
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
+
 Outputs:
+  # API Gateway endpoint
   WebEndpoint:
-    Description: API Gateway endpoint URL for Prod stage
+    Description: API Gateway endpoint URL
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
-# # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
-Globals:
-  Function:
-    Tracing: Active
-    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
-    LoggingConfig:
-      LogFormat: JSON
-  Api:
-    TracingEnabled: true
+    Export:
+      Name: !Sub "learnermax-api-endpoint-${Environment}"
+
+  # API Gateway ID for external integrations
+  ApiGatewayId:
+    Description: API Gateway ID
+    Value: !Ref ServerlessRestApi
+    Export:
+      Name: !Sub "learnermax-api-gateway-id-${Environment}"
+
+  # Lambda function ARN
+  LearnerMaxApiFunctionArn:
+    Description: LearnerMax API Lambda Function ARN
+    Value: !GetAtt LearnerMaxApiFunction.Arn
+    Export:
+      Name: !Sub "learnermax-api-function-arn-${Environment}"
+
+  # DynamoDB table name
+  DynamoDBTableName:
+    Description: DynamoDB table name
+    Value: !Ref SampleTable
+    Export:
+      Name: !Sub "learnermax-db-table-name-${Environment}"
+
+  # OpenAPI specification URL
+  OpenApiSpecUrl:
+    Description: URL to the OpenAPI specification
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/openapi.yaml"
+
+  # Environment info
+  EnvironmentInfo:
+    Description: Deployment environment information
+    Value: !Sub |
+      Environment: ${Environment}
+      Region: ${AWS::Region}
+      Stack: ${AWS::StackName}
+      API Endpoint: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/

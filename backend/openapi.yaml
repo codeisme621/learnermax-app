@@ -1,0 +1,407 @@
+openapi: 3.0.3
+info:
+  title: LearnerMax API
+  description: |
+    LearnerMax API provides endpoints for managing learning items and resources.
+
+    This API is built using Express.js and deployed on AWS Lambda using aws-lambda-web-adapter.
+
+    ## Features
+    - CRUD operations for learning items
+    - Environment-aware CORS configuration
+    - Comprehensive error handling
+    - Request/response validation
+
+    ## Authentication
+    Currently, this API does not require authentication. Future versions may include
+    JWT-based authentication.
+
+  version: 1.0.0
+  contact:
+    name: LearnerMax API Support
+    email: support@learnermax.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.learnermax.com
+    description: Production server
+  - url: https://dev-api.learnermax.com
+    description: Development server
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Items
+    description: Learning item management operations
+  - name: Health
+    description: API health and status endpoints
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Returns the current health status of the API
+      operationId: getHealth
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-01-15T10:30:00.000Z"
+                  environment:
+                    type: string
+                    enum: [dev, prod]
+                    example: dev
+
+  /:
+    get:
+      tags:
+        - Health
+      summary: API root endpoint
+      description: Returns basic API information and documentation links
+      operationId: getRoot
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: LearnerMax API
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  documentation:
+                    type: string
+                    example: "/api/docs"
+
+  /api/items:
+    get:
+      tags:
+        - Items
+      summary: Get all learning items
+      description: |
+        Retrieve all learning items from the database.
+
+        **Performance Notes:**
+        - Returns up to 1MB of data per request
+        - For larger datasets, pagination will be implemented in future versions
+
+        **Caching:**
+        - Results are not cached currently
+        - Consider implementing client-side caching for better performance
+      operationId: getAllItems
+      responses:
+        '200':
+          description: List of all learning items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+              examples:
+                empty_list:
+                  summary: Empty item list
+                  value: []
+                with_items:
+                  summary: List with items
+                  value:
+                    - id: "item-001"
+                      name: "Introduction to JavaScript"
+                      createdAt: "2024-01-15T10:30:00.000Z"
+                      updatedAt: "2024-01-15T10:30:00.000Z"
+                    - id: "item-002"
+                      name: "Advanced React Patterns"
+                      createdAt: "2024-01-16T14:20:00.000Z"
+                      updatedAt: "2024-01-16T14:20:00.000Z"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Items
+      summary: Create or update a learning item
+      description: |
+        Create a new learning item or update an existing one.
+
+        **Idempotency:**
+        - This operation is idempotent
+        - Sending the same request multiple times will result in the same state
+        - Uses PUT semantics with POST method
+
+        **Validation Rules:**
+        - `id` must be a non-empty string
+        - `name` must be a non-empty string
+        - Maximum length limits may apply (see schema)
+      operationId: createOrUpdateItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemInput'
+            examples:
+              basic_item:
+                summary: Basic learning item
+                value:
+                  id: "javascript-basics"
+                  name: "JavaScript Fundamentals"
+              advanced_item:
+                summary: Advanced topic
+                value:
+                  id: "react-hooks-advanced"
+                  name: "Advanced React Hooks Patterns"
+      responses:
+        '200':
+          description: Item created or updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+              examples:
+                created_item:
+                  summary: Newly created item
+                  value:
+                    id: "javascript-basics"
+                    name: "JavaScript Fundamentals"
+                    createdAt: "2024-01-15T10:30:00.000Z"
+                    updatedAt: "2024-01-15T10:30:00.000Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/items/{id}:
+    get:
+      tags:
+        - Items
+      summary: Get learning item by ID
+      description: |
+        Retrieve a specific learning item by its unique identifier.
+
+        **Performance:**
+        - This operation uses DynamoDB GetItem for optimal performance
+        - Average response time: < 100ms
+
+        **Error Handling:**
+        - Returns 404 if item doesn't exist
+        - Returns 400 for invalid ID format
+      operationId: getItemById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier of the learning item
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9\-_]+$'
+            minLength: 1
+            maxLength: 255
+          examples:
+            basic_id:
+              summary: Simple ID
+              value: "javascript-basics"
+            complex_id:
+              summary: Complex ID with separators
+              value: "react-hooks-advanced-2024"
+      responses:
+        '200':
+          description: Learning item found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+              examples:
+                found_item:
+                  summary: Successfully retrieved item
+                  value:
+                    id: "javascript-basics"
+                    name: "JavaScript Fundamentals"
+                    createdAt: "2024-01-15T10:30:00.000Z"
+                    updatedAt: "2024-01-15T10:30:00.000Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Item:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the learning item
+          pattern: '^[a-zA-Z0-9\-_]+$'
+          minLength: 1
+          maxLength: 255
+          example: "javascript-basics"
+        name:
+          type: string
+          description: Human-readable name of the learning item
+          minLength: 1
+          maxLength: 500
+          example: "JavaScript Fundamentals"
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the item was created
+          example: "2024-01-15T10:30:00.000Z"
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the item was last updated
+          example: "2024-01-15T10:30:00.000Z"
+          readOnly: true
+      additionalProperties: false
+
+    ItemInput:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the learning item
+          pattern: '^[a-zA-Z0-9\-_]+$'
+          minLength: 1
+          maxLength: 255
+          example: "javascript-basics"
+        name:
+          type: string
+          description: Human-readable name of the learning item
+          minLength: 1
+          maxLength: 500
+          example: "JavaScript Fundamentals"
+      additionalProperties: false
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+              description: Human-readable error message
+              example: "Item with id 'invalid-id' not found"
+            statusCode:
+              type: integer
+              description: HTTP status code
+              example: 404
+            timestamp:
+              type: string
+              format: date-time
+              description: ISO 8601 timestamp when the error occurred
+              example: "2024-01-15T10:30:00.000Z"
+            path:
+              type: string
+              description: API path where the error occurred
+              example: "/api/items/invalid-id"
+            stack:
+              type: string
+              description: Error stack trace (only in development)
+              example: "Error: Item not found\n    at ItemService.getById..."
+          required:
+            - message
+            - statusCode
+            - timestamp
+            - path
+      required:
+        - error
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            missing_required_field:
+              summary: Missing required field
+              value:
+                error:
+                  message: "Both id and name are required in the request body"
+                  statusCode: 400
+                  timestamp: "2024-01-15T10:30:00.000Z"
+                  path: "/api/items"
+            invalid_id_format:
+              summary: Invalid ID format
+              value:
+                error:
+                  message: "Invalid ID format"
+                  statusCode: 400
+                  timestamp: "2024-01-15T10:30:00.000Z"
+                  path: "/api/items/invalid@id"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            item_not_found:
+              summary: Item not found
+              value:
+                error:
+                  message: "Item with id 'non-existent-id' not found"
+                  statusCode: 404
+                  timestamp: "2024-01-15T10:30:00.000Z"
+                  path: "/api/items/non-existent-id"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            database_error:
+              summary: Database connection error
+              value:
+                error:
+                  message: "Failed to retrieve items from database"
+                  statusCode: 500
+                  timestamp: "2024-01-15T10:30:00.000Z"
+                  path: "/api/items"
+
+  securitySchemes:
+    # Future authentication schemes can be added here
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT Bearer token authentication.
+
+        **Note:** Authentication is not currently implemented but is planned for future versions.
+
+# Global security can be applied here when authentication is implemented
+# security:
+#   - BearerAuth: []
