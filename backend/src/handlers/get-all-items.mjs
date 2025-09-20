@@ -33,8 +33,36 @@ export const getAllItemsHandler = async (event) => {
         console.log("Error", err);
     }
 
+    // Environment-aware CORS configuration
+    const environment = process.env.ENVIRONMENT || 'dev';
+    const origin = event.headers?.origin || event.headers?.Origin;
+
+    let allowedOrigins;
+    if (environment === 'prod') {
+        allowedOrigins = ['https://www.learnermax.com'];
+    } else {
+        allowedOrigins = [
+            'http://localhost:3000',
+            'https://www.learnermax.com'
+        ];
+    }
+
+    // Check if request origin is allowed, also allow vercel.app domains for dev
+    let corsOrigin = '';
+    if (origin) {
+        if (allowedOrigins.includes(origin) ||
+            (environment === 'dev' && origin.includes('.vercel.app'))) {
+            corsOrigin = origin;
+        }
+    }
+
     const response = {
         statusCode: 200,
+        headers: {
+            "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+            "Access-Control-Allow-Origin": corsOrigin,
+            "Access-Control-Allow-Methods": "OPTIONS,POST,GET,PUT,DELETE"
+        },
         body: JSON.stringify(items)
     };
 
