@@ -1,15 +1,24 @@
 {
   "name": "e2e",
   "version": "1.0.0",
-  "description": "",
+  "description": "End-to-end testing for LearnerMax API and UI",
   "main": "index.js",
-  "scripts": {},
-  "keywords": [],
+  "scripts": {
+    "test:api": "playwright test tests/api --reporter=html",
+    "test:ui": "playwright test tests/ui --reporter=html",
+    "test:all": "playwright test --reporter=html",
+    "test:api:watch": "playwright test tests/api --ui"
+  },
+  "keywords": ["e2e", "testing", "playwright", "api"],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.13.1",
   "devDependencies": {
     "@playwright/test": "^1.55.0",
-    "@types/node": "^24.5.1"
+    "@types/node": "^24.5.1",
+    "axios": "^1.6.0",
+    "js-yaml": "^4.1.0",
+    "swagger-parser": "^10.0.3",
+    "@types/js-yaml": "^4.0.5"
   }
 }
