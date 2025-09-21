@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test:api": "playwright test tests/api --reporter=html",
-    "test:ui": "playwright test tests/ui --reporter=html",
+    "test:ui": "UI_TEST_ENV=preview playwright test tests/ui --project=ui-tests-chromium --reporter=html",
+    "test:ui:all": "UI_TEST_ENV=preview playwright test tests/ui --reporter=html",
+    "test:ui:local": "UI_TEST_ENV=local playwright test tests/ui --project=ui-tests-chromium --reporter=html",
+    "test:ui:watch": "UI_TEST_ENV=preview playwright test tests/ui --project=ui-tests-chromium --ui",
     "test:all": "playwright test --reporter=html",
     "test:api:watch": "playwright test tests/api --ui"
   },
