@@ -1,9 +1,19 @@
 import { render, screen } from '@testing-library/react'
 import Home from '../page'
 
+interface MockImageProps {
+  src: string
+  alt: string
+  width?: string | number
+  height?: string | number
+  priority?: boolean
+  className?: string
+  [key: string]: unknown
+}
+
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: ({ src, alt, width, height, priority, className, ...props }: any) => (
+  default: ({ src, alt, width, height, priority, className, ...props }: MockImageProps) => (
     <img
       src={src}
       alt={alt}
