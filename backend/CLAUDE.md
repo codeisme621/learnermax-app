@@ -30,8 +30,10 @@ pnpm run test:watch   # Run tests in watch mode
 
 # Deployment
 sam build             # Build SAM application
-sam deploy --parameter-overrides Environment=dev    # Deploy to dev
-sam logs -n LearnerMaxApiFunction --tail            # View Lambda logs
+sam deploy             # Deploy to dev (default environment)
+sam deploy --config-env prod    # Deploy to prod environment
+sam logs -n LearnerMaxApiFunction --stack-name learnmax-api-dev --tail       # View dev Lambda logs
+sam logs -n LearnerMaxApiFunction --stack-name learnmax-api-prod --tail      # View prod Lambda logs
 ```
 
 ## Project Structure
@@ -68,7 +70,8 @@ backend/
 ## Environment Configuration
 
 ### Deployment Environments
-- **dev** - Development with relaxed CORS for local testing
+- **dev** - Development with relaxed CORS for local testing (default)
+- **prod** - Production environment
 
 ### Required Environment Variables
 - `SAMPLE_TABLE` - DynamoDB table name (set by SAM template)
