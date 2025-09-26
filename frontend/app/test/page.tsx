@@ -17,7 +17,7 @@ export default function TestPage() {
   const [error, setError] = useState<string | null>(null)
   const [tested, setTested] = useState(false)
 
-  const apiUrl = 'https://anfg4lcnxe.execute-api.us-east-1.amazonaws.com/Prod/'
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
 
   const fetchData = async () => {
     setLoading(true)

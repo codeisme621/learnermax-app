@@ -4,13 +4,16 @@
   "description": "End-to-end testing for LearnerMax API and UI",
   "main": "index.js",
   "scripts": {
-    "test:api": "playwright test tests/api --reporter=html",
+    "setup:local": "node scripts/setup-local.js",
+    "setup:preview": "echo 'Preview environment setup not yet implemented'",
+    "test:api": "TEST_ENV=dev playwright test tests/api --reporter=html",
+    "test:api:local": "TEST_ENV=local playwright test tests/api --reporter=html",
+    "test:api:watch": "TEST_ENV=dev playwright test tests/api --ui",
     "test:ui": "UI_TEST_ENV=preview playwright test tests/ui --project=ui-tests-chromium --reporter=html",
-    "test:ui:all": "UI_TEST_ENV=preview playwright test tests/ui --reporter=html",
     "test:ui:local": "UI_TEST_ENV=local playwright test tests/ui --project=ui-tests-chromium --reporter=html",
     "test:ui:watch": "UI_TEST_ENV=preview playwright test tests/ui --project=ui-tests-chromium --ui",
-    "test:all": "playwright test --reporter=html",
-    "test:api:watch": "playwright test tests/api --ui"
+    "test:all": "TEST_ENV=dev UI_TEST_ENV=preview playwright test --reporter=html",
+    "test:all:local": "TEST_ENV=local UI_TEST_ENV=local playwright test --reporter=html"
   },
   "keywords": ["e2e", "testing", "playwright", "api"],
   "author": "",
