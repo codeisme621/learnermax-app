@@ -53,95 +53,36 @@ e2e/
 
 ## Available Commands
 
-### Primary Test Commands
+### Test Commands (All tests read configuration from local.env)
 ```bash
-# Environment Setup (Required before testing)
-pnpm run setup:local           # Start local backend + frontend for development
-pnpm run setup:preview         # Deploy to preview environments (Vercel + AWS dev)
-
 # API Integration Tests
-pnpm run test:api              # Run API tests against dev environment
-pnpm run test:api:local        # Run API tests against local SAM environment
-pnpm run test:api:watch        # Interactive API testing mode (dev environment)
+pnpm run test:api              # Run API tests (uses local.env configuration)
+pnpm run test:api:watch        # Interactive API testing mode
 
 # UI Integration Tests (Chrome only)
-pnpm run test:ui               # Run UI tests on preview environment
-pnpm run test:ui:local         # Run UI tests against localhost:3000
+pnpm run test:ui               # Run UI tests (uses local.env configuration)
 pnpm run test:ui:watch         # Interactive UI testing mode
 
 # Combined Testing
-pnpm run test:all              # Run both API and UI tests (preview/dev environments)
-pnpm run test:all:local        # Run both API and UI tests (local environment)
+pnpm run test:all              # Run both API and UI tests (uses local.env configuration)
 ```
 
-### Environment Variables
+### Configuration (local.env file)
+The e2e tests read all configuration from the `local.env` file:
+
 ```bash
-# API Testing
-TEST_ENV=dev|local             # API environment selection (dev=AWS, local=Express)
-API_BASE_URL=<url>             # Override default API base URL
-
-# UI Testing
-UI_TEST_ENV=preview|local      # UI environment selection (preview=Vercel, local=Next.js)
-UI_BASE_URL=<url>              # Override default UI base URL
-VERCEL_AUTOMATION_BYPASS_SECRET=<secret>  # Preview deployment access
+# Configuration managed by prerequisite scripts:
+UI_BASE_URL=<url>              # Frontend URL (Vercel preview or localhost:3000)
+API_BASE_URL=<url>             # Backend API URL (AWS dev or localhost:8080)
+TEST_ENV=<env>                 # Environment indicator (dev or local)
+VERCEL_AUTOMATION_BYPASS_SECRET=<secret>  # Preview deployment access (preserved)
 ```
+
+**Note**: The `local.env` file is automatically configured by the project's prerequisite scripts and should contain the correct URLs and environment settings for your testing scenario.
 
 ### Prerequisites
-```bash
-# For local testing
-node --version                 # Node.js 18+ for both backend and frontend
-pnpm --version                 # pnpm package manager
-vercel --version               # Vercel CLI for preview deployments
-
-# For preview testing
-aws configure                  # AWS CLI configured for deployments
-vercel login                   # Vercel CLI authenticated
-```
-
-### Local Development Setup
-
-The `setup:local` script automatically:
-1. Validates project structure (backend and frontend directories)
-2. Installs dependencies for both projects using pnpm
-3. Starts backend Express server on port 8080
-4. Starts frontend Next.js server on port 3000
-5. Provides colored console output to distinguish between services
-
-**Usage:**
-```bash
-pnpm run setup:local
-```
-
-**Services:**
-- Backend API: `http://localhost:8080` (Express with ts-node)
-- Frontend UI: `http://localhost:3000` (Next.js with Turbopack)
-
-Press `Ctrl+C` to stop both services.
-
-### Testing Results Summary
-
-The setup script successfully enables local e2e testing with the following results:
-
-**✅ API Tests**: 29/33 passing against local backend
-- Backend connects to AWS DynamoDB dev environment via dotenv configuration
-- 4 minor failures related to API specification compliance (not infrastructure issues)
-
-**⚠️  UI Tests**: 5/11 passing against local frontend
-- Frontend loads correctly on localhost:3000
-- Some failures related to specific UI component expectations (test implementation issues)
-- Core navigation and page loading works properly
-
-**📊 Combined Tests**: 39/66 total passing
-- Both services communicate properly in local environment
-- Infrastructure and setup working as expected
-
-### Important Notes
-
-1. **Backend Environment**: The backend uses dotenv to load environment variables for local development, including database connection details for AWS DynamoDB dev environment.
-
-2. **Test Failures**: Most test failures are related to specific UI component implementations or minor API specification details, not infrastructure setup issues.
-
-3. **Service Health**: Both backend (port 8080) and frontend (port 3000) start successfully and respond to requests.
+- Node.js 18+ and pnpm package manager installed
+- Environment configured via `local.env` file (see Configuration section)
 
 ## Playwright Best Practices
 
@@ -303,16 +244,11 @@ expect(await page.textContent('.status')).toBe('Success');
 
 ### Environment-Based Configuration
 ```typescript
-// Use environment variables for flexible configuration
+// Configuration comes from local.env via dotenv
 const config = {
-  dev: {
-    apiBaseURL: process.env.API_BASE_URL || 'https://api-dev.example.com',
-    timeout: 10000
-  },
-  prod: {
-    apiBaseURL: process.env.API_BASE_URL || 'https://api.example.com',
-    timeout: 15000
-  }
+  apiBaseURL: process.env.API_BASE_URL,
+  uiBaseURL: process.env.UI_BASE_URL,
+  testEnv: process.env.TEST_ENV
 };
 ```
 
@@ -348,10 +284,11 @@ test.afterEach(async ({ request }) => {
 
 ## Debugging and Troubleshooting
 
-### Local Development
+### Interactive Testing
 ```bash
 # Use Playwright's built-in debugging
-pnpm run test:ui:watch          # Interactive mode with UI
+pnpm run test:ui:watch          # Interactive UI testing mode
+pnpm run test:api:watch         # Interactive API testing mode
 pnpm run test:api --debug       # Debug mode for API tests
 ```
 
