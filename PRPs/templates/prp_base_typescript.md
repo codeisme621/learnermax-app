@@ -97,49 +97,97 @@ Examples:
 
 ```
 
-### Implementation Tasks (ordered by dependencies)
+### Implementation Tasks (ordered by subdirectory and dependencies)
 
 ```yaml
-Task 1: CREATE lib/types/{domain}.types.ts
-  - IMPLEMENT: TypeScript interfaces and types for domain models
-  - FOLLOW pattern: lib/types/existing.types.ts (interface structure, export patterns)
+# BACKEND TASKS (TDD: Test First, then Implementation)
+Task 1: CREATE backend/src/__tests__/{domain}.test.ts
+  - IMPLEMENT: Unit tests for domain logic (WRITE FIRST - SHOULD FAIL)
+  - FOLLOW pattern: backend/src/__tests__/existing.test.ts (test structure, mocking patterns)
+  - NAMING: describe blocks, test naming conventions, TypeScript test typing
+  - COVERAGE: All business logic, API handlers, data models with positive and negative test cases
+  - PLACEMENT: Tests in backend/src/__tests__/
+  - TDD: Run test, verify it FAILS, then proceed to Task 2
+
+Task 2: CREATE backend/src/types/{domain}.types.ts
+  - IMPLEMENT: TypeScript interfaces and types for domain models, API contracts
+  - FOLLOW pattern: backend/src/types/existing.types.ts (interface structure, export patterns)
   - NAMING: PascalCase for interfaces, camelCase for properties
-  - PLACEMENT: Type definitions in lib/types/
+  - PLACEMENT: Type definitions in backend/src/types/
+  - DEPENDENCIES: Must satisfy failing tests from Task 1
 
-Task 2: CREATE components/{domain}/{ComponentName}.tsx
-  - IMPLEMENT: React component with proper TypeScript props interface
-  - FOLLOW pattern: components/existing/ExistingComponent.tsx (component structure, props typing)
-  - NAMING: PascalCase for components, camelCase for props, kebab-case for CSS classes
-  - DEPENDENCIES: Import types from Task 1
-  - PLACEMENT: Component layer in components/{domain}/
+Task 3: CREATE backend/src/routes/{domain}.ts
+  - IMPLEMENT: Express route handlers with proper TypeScript typing
+  - FOLLOW pattern: backend/src/routes/existing.ts (route structure, error patterns)
+  - NAMING: Named exports for route functions, proper TypeScript typing
+  - DEPENDENCIES: Import types from Task 2
+  - PLACEMENT: Route handlers in backend/src/routes/
+  - TDD: Run tests from Task 1, verify they now PASS
 
-Task 3: CREATE app/api/{resource}/route.ts
-  - IMPLEMENT: Next.js API route handlers (GET, POST, etc.)
-  - FOLLOW pattern: app/api/existing/route.ts (request/response handling, error patterns)
-  - NAMING: Named exports (GET, POST, PUT, DELETE), proper TypeScript typing
-  - DEPENDENCIES: Import types and components from previous tasks
-  - PLACEMENT: API routes in app/api/{resource}/
-
-Task 4: CREATE app/{feature}/page.tsx
-  - IMPLEMENT: Next.js page component using domain components
-  - FOLLOW pattern: app/existing-page/page.tsx (page structure, metadata, error boundaries)
-  - NAMING: Default export, proper metadata export, TypeScript page props
-  - DEPENDENCIES: Import components from Task 2, types from Task 1
-  - PLACEMENT: Page routes in app/{feature}/
-
-Task 5: CREATE hooks/use{DomainAction}.ts
-  - IMPLEMENT: Custom React hooks for state management and API calls
-  - FOLLOW pattern: hooks/useExisting.ts (hook structure, TypeScript generics, error handling)
-  - NAMING: use{ActionName} with proper TypeScript return types
-  - DEPENDENCIES: Import types from Task 1, API endpoints from Task 3
-  - PLACEMENT: Custom hooks in hooks/
-
-Task 6: CREATE __tests__/{component}.test.tsx
-  - IMPLEMENT: Jest/Testing Library tests for components and hooks
-  - FOLLOW pattern: __tests__/existing.test.tsx (test structure, mocking patterns)
+# FRONTEND TASKS (TDD: Test First, then Implementation)
+Task 4: CREATE frontend/components/__tests__/{component}.test.tsx
+  - IMPLEMENT: Unit tests for React components and hooks (WRITE FIRST - SHOULD FAIL)
+  - FOLLOW pattern: frontend/components/__tests__/existing.test.tsx (test structure, mocking patterns)
   - NAMING: describe blocks, test naming conventions, TypeScript test typing
   - COVERAGE: All components and hooks with positive and negative test cases
-  - PLACEMENT: Tests alongside the code they test
+  - PLACEMENT: Tests in frontend/components/__tests__/
+  - TDD: Run test, verify it FAILS, then proceed to Task 5
+
+Task 5: CREATE frontend/lib/types/{domain}.types.ts
+  - IMPLEMENT: TypeScript interfaces for frontend data models, component props
+  - FOLLOW pattern: frontend/lib/types/existing.types.ts (interface structure, export patterns)
+  - NAMING: PascalCase for interfaces, camelCase for properties
+  - PLACEMENT: Type definitions in frontend/lib/types/
+  - DEPENDENCIES: Must satisfy failing tests from Task 4
+
+Task 6: CREATE frontend/components/{domain}/{ComponentName}.tsx
+  - IMPLEMENT: React component with proper TypeScript props interface
+  - FOLLOW pattern: frontend/components/existing/ExistingComponent.tsx (component structure, props typing)
+  - NAMING: PascalCase for components, camelCase for props, kebab-case for CSS classes
+  - DEPENDENCIES: Import types from Task 5
+  - PLACEMENT: Component layer in frontend/components/{domain}/
+  - TDD: Run tests from Task 4, verify they now PASS
+
+Task 7: CREATE frontend/lib/hooks/use{DomainAction}.ts
+  - IMPLEMENT: Custom React hooks for state management and API calls
+  - FOLLOW pattern: frontend/lib/hooks/useExisting.ts (hook structure, TypeScript generics, error handling)
+  - NAMING: use{ActionName} with proper TypeScript return types
+  - DEPENDENCIES: Import types from Task 5, backend API endpoints from Tasks 2-3
+  - PLACEMENT: Custom hooks in frontend/lib/hooks/
+  - TDD: Ensure hook tests from Task 4 PASS
+
+Task 8: CREATE frontend/app/{feature}/page.tsx
+  - IMPLEMENT: Next.js page component using domain components
+  - FOLLOW pattern: frontend/app/existing-page/page.tsx (page structure, metadata, error boundaries)
+  - NAMING: Default export, proper metadata export, TypeScript page props
+  - DEPENDENCIES: Import components from Task 6, hooks from Task 7, types from Task 5
+  - PLACEMENT: Page routes in frontend/app/{feature}/
+
+Task 9: CREATE frontend/app/api/{resource}/route.ts
+  - IMPLEMENT: Next.js API route handlers (orchestration layer to backend APIs)
+  - FOLLOW pattern: frontend/app/api/existing/route.ts (request/response handling, error patterns)
+  - NAMING: Named exports (GET, POST, PUT, DELETE), proper TypeScript typing
+  - DEPENDENCIES: Import types from Task 5, call backend APIs from Tasks 2-3
+  - PLACEMENT: API routes in frontend/app/api/{resource}/
+
+# E2E TASKS (Integration Testing)
+Task 10: CREATE e2e/tests/ui/{feature}.spec.ts
+  - IMPLEMENT: Playwright UI integration tests for complete user workflows
+  - FOLLOW pattern: e2e/tests/ui/existing.spec.ts (test structure, page object patterns)
+  - NAMING: describe blocks for user journeys, test naming for specific UI flows
+  - COVERAGE: Real user workflows, UI interactions, form submissions, navigation flows
+  - DEPENDENCIES: Requires completed frontend (Tasks 4-9)
+  - PLACEMENT: UI integration tests in e2e/tests/ui/
+  - SCOPE: End-to-end user interface scenarios
+
+Task 11: CREATE e2e/tests/api/{feature}.spec.ts
+  - IMPLEMENT: Playwright API integration tests for backend functionality
+  - FOLLOW pattern: e2e/tests/api/existing.spec.ts (API test structure, request/response patterns)
+  - NAMING: describe blocks for API endpoints, test naming for specific API flows
+  - COVERAGE: API interactions, database connections, cross-system functionality
+  - DEPENDENCIES: Requires completed backend (Tasks 1-3) and frontend API routes (Task 9)
+  - PLACEMENT: API integration tests in e2e/tests/api/
+  - SCOPE: End-to-end API and system integration scenarios
 ```
 
 ### Implementation Patterns & Key Details
@@ -205,14 +253,16 @@ ROUTES:
 ### Level 1: Syntax & Style (Immediate Feedback)
 
 ```bash
-# Run after each file creation - fix before proceeding
-npm run lint                    # ESLint checks with TypeScript rules
-npx tsc --noEmit               # TypeScript type checking (no JS output)
-npm run format                 # Prettier formatting
+# FRONTEND VALIDATION (run in /frontend directory)
+cd frontend
+pnpm lint                      # ESLint checks with TypeScript rules
+npx tsc --noEmit              # TypeScript type checking (no JS output)
+# Note: Frontend has lint script but no format script configured
 
-# Project-wide validation
-npm run lint:fix               # Auto-fix linting issues
-npm run type-check             # Full TypeScript validation
+# BACKEND VALIDATION (run in /backend directory)
+cd backend
+pnpm run build                # TypeScript compilation to /dist
+# Note: Backend needs ESLint added to package.json scripts
 
 # Expected: Zero errors. If errors exist, READ output and fix before proceeding.
 ```
@@ -220,16 +270,23 @@ npm run type-check             # Full TypeScript validation
 ### Level 2: Unit Tests (Component Validation)
 
 ```bash
-# Test each component/hook as it's created
-npm test -- __tests__/{domain}.test.tsx
-npm test -- __tests__/use{Hook}.test.ts
+# FRONTEND TESTS (run in /frontend directory)
+cd frontend
+pnpm test                     # Run all Jest tests
+pnpm test:coverage            # Run tests with coverage report
+pnpm test:watch               # Run tests in watch mode during development
 
-# Full test suite for affected areas
-npm test -- components/{domain}/
-npm test -- hooks/
+# Test specific patterns
+pnpm test -- components/__tests__/{domain}.test.tsx
+pnpm test -- lib/__tests__/{utility}.test.ts
 
-# Coverage validation (if available)
-npm test -- --coverage --watchAll=false
+# BACKEND TESTS (run in /backend directory)
+cd backend
+pnpm test                     # Run Jest tests with ts-jest
+pnpm test:watch               # Run tests in watch mode
+
+# Test specific patterns
+pnpm test -- __tests__/unit/services/{service}.test.ts
 
 # Expected: All tests pass. If failing, debug root cause and fix implementation.
 ```
@@ -237,67 +294,44 @@ npm test -- --coverage --watchAll=false
 ### Level 3: Integration Testing (System Validation)
 
 ```bash
-# Development server validation
-npm run dev &
-sleep 5  # Allow Next.js startup time
+# FRONTEND INTEGRATION (run in /frontend directory)
+cd frontend
+pnpm run dev &                # Start Next.js dev server with Turbopack
+sleep 5                       # Allow Next.js startup time
 
 # Page load validation
 curl -I http://localhost:3000/{feature-page}
 # Expected: 200 OK response
 
-# API endpoint validation
-curl -X POST http://localhost:3000/api/{resource} \
-  -H "Content-Type: application/json" \
-  -d '{"test": "data"}' \
-  | jq .  # Pretty print JSON response
-
 # Production build validation
-npm run build
+pnpm run build               # Build for production with Turbopack
 # Expected: Successful build with no TypeScript errors or warnings
 
-# Component rendering validation (if SSR/SSG)
-curl http://localhost:3000/{page} | grep -q "expected-content"
+# BACKEND INTEGRATION (run in /backend directory)
+cd backend
+pnpm run dev &               # Start Express server on port 8080
+sleep 3                      # Allow Express startup time
 
-# Expected: All integrations working, proper responses, no hydration errors
-```
+# Health check validation
+curl -I http://localhost:8080/health
+# Expected: 200 OK response with environment info
 
-### Level 4: Creative & Domain-Specific Validation
+# API endpoint validation
+curl -X GET http://localhost:8080/api/items \
+  -H "Content-Type: application/json" \
+  | jq .  # Pretty print JSON response
 
-```bash
-# TypeScript/Next.js Specific Validation:
+# SAM local testing (optional)
+sam build                    # Build SAM application
 
-# Production build performance
-npm run build && npm run analyze  # Bundle analyzer if available
-
-# Type safety validation
-npx tsc --noEmit --strict        # Strict TypeScript checking
-
-# Next.js specific checks
-npm run lint:next                # Next.js linting rules if available
-
-# MCP Server Validation Examples:
-# Playwright MCP (for E2E testing)
-playwright-mcp --test-user-flows --browser chromium
-
-# Performance MCP (for Lighthouse audits)
-lighthouse-mcp --url http://localhost:3000 --audit performance
-
-# Accessibility MCP (for a11y testing)
-axe-mcp --scan http://localhost:3000/{pages}
-
-# Custom TypeScript/React Validation
-# React Testing Library integration tests
-# Storybook visual regression tests (if available)
-# TypeScript strict mode compliance
-
-# Expected: All creative validations pass, performance/accessibility standards met
+# Expected: All integrations working, proper responses, APIs functional
 ```
 
 ## Final Validation Checklist
 
 ### Technical Validation
 
-- [ ] All 4 validation levels completed successfully
+- [ ] All 3 validation levels completed successfully
 - [ ] All tests pass: `npm test`
 - [ ] No linting errors: `npm run lint`
 - [ ] No type errors: `npx tsc --noEmit`

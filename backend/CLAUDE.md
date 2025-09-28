@@ -25,6 +25,7 @@ This is an Express.js API running on AWS Lambda using the AWS Lambda Web Adapter
 pnpm install          # Install dependencies
 pnpm run build        # Build TypeScript to /dist
 pnpm run dev          # Run locally on port 8080 with ts-node
+pnpm run lint         # Run ESLint on TypeScript files
 pnpm test             # Run Jest tests
 pnpm run test:watch   # Run tests in watch mode
 

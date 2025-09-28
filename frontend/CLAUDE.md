@@ -37,6 +37,20 @@ Component Registries (Current & Planned)
 - **Styling Utilities**: clsx, tailwind-merge for conditional classes
 - **Icons**: Lucide React for consistent iconography
 
+## MCP Server Integration
+
+This project leverages **shadcn MCP server** and **Playwright MCP server** for enhanced development workflow:
+
+### shadcn MCP Server
+- **Purpose**: Provides AI-driven access to shadcn/ui component registry with context-aware suggestions
+- **Capabilities**: Browse components, search registries, install with natural language, access demos and metadata
+- **Benefits**: Ensures components are implemented correctly with proper context, preventing "off-looking" AI-generated UIs
+
+### Playwright MCP Server
+- **Purpose**: Browser automation for visual component verification and testing
+- **Capabilities**: Accessibility tree-based verification, screenshot-based visual diffing, automated test generation
+- **Benefits**: Real-time visual verification, automated regression detection, AI-generated tests
+
 ## Development Commands
 
 ```bash
@@ -51,8 +65,13 @@ pnpm test             # Run Jest unit tests
 pnpm test:watch       # Run tests in watch mode
 pnpm test:coverage    # Run tests with coverage report
 
-# shadcn/ui
+# shadcn/ui (Enhanced with MCP)
 npx shadcn@latest add [component]  # Add components from registries
+# Use mcp__shadcn__getComponents for browsing available components
+# Use mcp__shadcn__getComponent for detailed component information
+
+# Visual Testing (MCP Playwright)
+# Use mcp__playwright__ tools for component verification after development
 ```
 
 ## Architecture Patterns
@@ -64,6 +83,25 @@ npx shadcn@latest add [component]  # Add components from registries
 - **Utilities**: Shared utilities including the `cn()` function for class merging
 
 
+### Enhanced shadcn/ui Component Workflow with MCP
+
+**ALWAYS follow this component development workflow:**
+
+1. **Discover Existing Components**
+   - First check local `components/ui/` directory for existing components
+   - Use `mcp__shadcn__getComponents` to browse available shadcn registry components
+   - Search through existing codebase for similar patterns or components
+
+2. **Component Analysis & Selection**
+   - If existing component meets needs → extend or customize it
+   - If no suitable component exists → use `mcp__shadcn__getComponent` for detailed component information
+   - Review component demos, installation instructions, and usage patterns
+
+3. **Implementation with Context**
+   - Use component information from MCP server to implement correctly
+   - Follow shadcn/ui patterns: CVA variants, Slot composition, proper TypeScript interfaces
+   - Maintain consistency with existing component architecture
+
 ### shadcn/ui Component Pattern
 All components follow the shadcn/ui conventions:
 - **CVA variants**: Consistent variant API across all components
@@ -71,6 +109,7 @@ All components follow the shadcn/ui conventions:
 - **Customizable**: Easy to modify styling and behavior since we own the code
 - **Accessible**: Built on Radix UI primitives for robust accessibility
 - **TypeScript**: Full type safety with proper prop interfaces
+- **MCP-Enhanced**: Leverage shadcn MCP server for proper implementation context
 
 ```tsx
 // Example shadcn/ui component structure
@@ -103,6 +142,84 @@ Button.displayName = "Button"
 - Mock external dependencies (Next.js Image, etc.)
 - Test component rendering, props, variants, and user interactions
 - Tests located in `__tests__` directories alongside source files
+
+### Visual Component Verification with Playwright MCP
+
+**MANDATORY workflow after completing any visual component:**
+
+1. **Post-Development Verification**
+   - After unit tests pass and lint succeeds
+   - Use `mcp__playwright__browser_navigate` to navigate to component in development server
+   - Use `mcp__playwright__browser_snapshot` for accessibility tree verification
+
+2. **Visual Testing Process**
+   - Use `mcp__playwright__browser_take_screenshot` to capture component visuals
+   - Test component in different viewport sizes with `mcp__playwright__browser_resize`
+   - Verify interactive states (hover, focus, disabled) with `mcp__playwright__browser_hover` and `mcp__playwright__browser_click`
+
+3. **Accessibility & User Experience Validation**
+   - Verify proper ARIA roles and labels through accessibility snapshots
+   - Test keyboard navigation and screen reader compatibility
+   - Ensure component meets WCAG guidelines through Playwright's accessibility tree
+
+4. **Chrome Browser only & Responsive Testing**
+   - Test component in Chrome browser only
+   - Verify responsive behavior at various breakpoints
+   - Validate component performance and rendering consistency
+
+**When Visual Testing is Required:**
+- ✅ New UI components or major component modifications
+- ✅ Layout changes or styling updates
+- ✅ Interactive element implementations (buttons, forms, modals)
+- ✅ Responsive design implementations
+- ❌ Simple text changes or minor styling tweaks
+- ❌ Backend logic or API integrations (unless they affect UI)
+
+## Complete MCP-Enhanced Development Workflow
+
+**Full component development cycle using MCP servers:**
+
+```mermaid
+graph TD
+    A[Start Component Task] --> B[Check Existing Components]
+    B --> C{Component Exists?}
+    C -->|Yes| D[Extend/Customize]
+    C -->|No| E[Search shadcn MCP]
+    E --> F[Get Component Details]
+    F --> G[Implement Component]
+    D --> G
+    G --> H[Write Unit Tests]
+    H --> I[Run Tests & Lint]
+    I --> J{Tests Pass?}
+    J -->|No| H
+    J -->|Yes| K[Visual Verification]
+    K --> L[Playwright MCP Testing]
+    L --> M[Screenshot & Accessibility]
+    M --> N[Component Complete]
+```
+
+### Integration Best Practices
+
+1. **Context-First Development**
+   - Always use shadcn MCP server for component discovery and implementation guidance
+   - Leverage existing component patterns before creating new ones
+   - Maintain consistency with project's design system
+
+2. **Quality Assurance Pipeline**
+   - Unit tests → Lint → Visual verification → Accessibility testing
+   - Use Playwright MCP for real browser testing after development
+   - Document any visual regressions or accessibility issues
+
+3. **MCP Server Usage Patterns**
+   - **Discovery Phase**: `mcp__shadcn__getComponents` → browse available options
+   - **Implementation Phase**: `mcp__shadcn__getComponent` → get detailed specs
+   - **Verification Phase**: `mcp__playwright__` tools → visual and functional testing
+   - **Documentation Phase**: Screenshot generation for design system documentation
+
+4. **Collaboration & Handoff**
+   - Use Playwright screenshots for design review and stakeholder communication
+   - Generate accessibility reports through MCP server for compliance documentation
+   - Create visual test coverage for regression prevention
 
 ## Configuration Files
 

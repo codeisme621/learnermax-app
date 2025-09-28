@@ -14,6 +14,7 @@ interface MockImageProps {
 jest.mock('next/image', () => ({
   __esModule: true,
   default: ({ src, alt, width, height, priority, className, ...props }: MockImageProps) => (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={src}
       alt={alt}
